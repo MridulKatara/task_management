@@ -1,33 +1,32 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const authRoutes = require('./routes/authRoutes');
-const authMiddleware = require('./middleware/authmiddleware'); 
 
-dotenv.config();
+const connection = require("./config/db");
+const authRouter = require('./routes/authRoutes');
+const authMiddleware = require('./middleware/auth.Middleware');
+const taskRouter = require('./routes/taskRoutes');
+
+require("dotenv").config();
 
 const app = express();
 
-// Middleware
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error(err));
+app.use('/auth', authRouter);
+app.use('/task', authMiddleware, taskRouter);
 
-  // Routes
-app.use('/api/auth', authRoutes);
+const PORT = process.env.PORT || 3000;
 
-// Protected route example
-app.get('/api/profile', authMiddleware, (req, res) => {
-  // Access user data from request object
-  const userId = req.user.id;
-  // Fetch user profile from database using userId
-  res.json({ profile: 'User profile data' });
+app.listen(PORT, async () => {
+    try {
+        await connection;
+
+        console.log(`Server is running on port ${PORT}`);
+        console.log("Connected to MongoDB");
+        
+    } catch (error) {
+        console.log("Error connecting to MongoDB:");
+        console.error(error);
+    }
 });
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
